@@ -1,0 +1,104 @@
+---
+title: "Inverse Probability of Treatment Weighting"
+---
+
+Because the causal effect of `A` on `Y` is identified by adjusting for the confounders `L1` and `L2`, we can estimate by inverse probability of treatment weighting.
+
+1) Model $P(A = 1\mid L_1, L_2)$, the conditional probability of treatment given confounders
+2) Predict the conditional probability $\pi$ of each unit's observed treatment
+     * if `A = 1`, predict $\pi = P(A = 1 \mid L_1,L_2)$
+     * if `A = 0`, predict $\pi = P(A = 0 \mid L_1,L_2)$
+3) Aggregate to the average causal effect
+     * estimate the expected outcome under treatment $E(Y^1)$ by a weighted mean of treated units' outcomes, weighted by $\frac{1}{\pi}$
+     * estimate the expected outcome under control $E(Y^0)$ by a weighted mean of untreated units' outcomes, weighted by $\frac{1}{\pi}$
+     * estimate the average causal effect by the difference
+
+The code below assumes you have generated data as on the [data](data) page.
+
+```{r, echo = F}
+library(dplyr)
+n <- 100
+data <- tibble(L1 = rnorm(n),
+               L2 = rnorm(n)) |>
+  # Generate potential outcomes as functions of L
+  mutate(Y0 = rnorm(n(), mean = L1 + L2, sd = 1),
+         Y1 = rnorm(n(), mean = Y0 + 1, sd = 1)) |>
+  # Generate treatment as a function of L
+  mutate(propensity_score = plogis(-2 + L1 + L2)) |>
+  mutate(A = rbinom(n(), 1, propensity_score)) |>
+  # Generate factual outcome
+  mutate(Y = case_when(A == 0 ~ Y0,
+                       A == 1 ~ Y1))
+```
+
+## 1) Model
+
+The code below uses logistic regression to model the conditional probability of treatment.
+
+```{r}
+model <- glm(
+  A ~ L1 + L2, 
+  data = data, 
+  family = binomial
+)
+```
+```{r, echo = F}
+summary(model)
+```
+
+## 2) Predict
+
+The code below predicts the conditional probability of each unit's observed treatment value, also known as the propensity score.
+
+```{r}
+predicted <- data |>
+  # Predict the probabilities that A = 1 and A = 0
+  mutate(
+    p_A_equals_1 = predict(model, type = "response"),
+    p_A_equals_0 = 1 - p_A_equals_1
+  ) |>
+  # Assign the propensity score based on the observed treatment
+  mutate(
+    pi = case_when(
+      A == 1 ~ p_A_equals_1,
+      A == 0 ~ p_A_equals_0
+    )
+  )
+```
+```{r, echo = F}
+predicted |> print(n = 3)
+```
+
+## 3) Aggregate
+
+The final step is to aggregate to an average causal effect estimate.
+
+```{r}
+aggregated_Y1 <- predicted |>
+  # Restrict to cases with A == 1
+  filter(A == 1) |>
+  # Calculate the weighted mean outcome
+  summarize(estimate = weighted.mean(Y, w = 1 / pi))
+
+aggregated_Y0 <- predicted |>
+  # Restrict to cases with A == 1
+  filter(A == 0) |>
+  # Calculate the weighted mean outcome
+  summarize(estimate = weighted.mean(Y, w = 1 / pi))
+
+average_effect_estimate <- aggregated_Y1 - aggregated_Y0
+```
+```{r, echo = F}
+average_effect_estimate
+```
+
+## Closing thoughts
+
+Inverse probability of treatment weighting is a powerful strategy because it bridges nonparametric causal identification to longstanding strategies from survey sampling where units from a population are sampled with known probabilities of inclusion. The analogy is that outcomes under treatment are sampled with estimated inclusion probabilities (the probability of treatment). Just as in a population sample we would need to think carefully about the probability of sampling, treatment modeling encourages us to model the probability of receiving the observed treatment.
+
+Here are a few things you could try next:
+
+- replace step (1) with another approach to estimate conditional treatment probabilities, such as a different functional form or a machine learning method
+- evaluate performance over many repeated simulations
+- evaluate performance at different simulated sample sizes
+

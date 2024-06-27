@@ -1,0 +1,128 @@
+---
+title: "Matching"
+---
+
+Because the causal effect of `A` on `Y` is identified by adjusting for the confounders `L1` and `L2`, we can estimate by matching treated and untreated units with similar values of these confounders.
+
+1) Choose the target population: over whom to take the average effect
+2) Choose a distance metric. What does it mean for two units to be ``similar'' on the confounders?
+3) Choose a method for matching units based on their pairwise distances
+4) Aggregate by a weighted mean or outcome model
+
+There are many methods for matching. The code below walks through the particular case of propensity score matching.
+
+The code below assumes you have generated data as on the [data](data) page.
+
+```{r, echo = F}
+library(dplyr)
+n <- 100
+data <- tibble(L1 = rnorm(n),
+               L2 = rnorm(n)) |>
+  # Generate potential outcomes as functions of L
+  mutate(Y0 = rnorm(n(), mean = L1 + L2, sd = 1),
+         Y1 = rnorm(n(), mean = Y0 + 1, sd = 1)) |>
+  # Generate treatment as a function of L
+  mutate(propensity_score = plogis(-2 + L1 + L2)) |>
+  mutate(A = rbinom(n(), 1, propensity_score)) |>
+  # Generate factual outcome
+  mutate(Y = case_when(A == 0 ~ Y0,
+                       A == 1 ~ Y1))
+```
+
+## 1) Target population
+
+While the target population is relevant to all causal estimands and estimators, it is especially apparent when matching. One might choose
+
+* average treatment effect (ATE): the average over all units
+* average treatment effect on the treated (ATT): the average effect among units who received the treatment
+* average treatment effect on the control (ATC): the average effect among units who did not receive the treatment
+
+We will focus on the ATT, which means we will take each treated unit and seek to find a matching control unit with similar values of the confounders. If we instead studied the ATC, we would take each control unit and seek to find a matching treated unit with similar values of the confounders. The ATT and ATC will generally be different to the degree that effects and treatment probabilities both vary across values of the confounders.
+
+## 2) Distance metric
+
+Suppose one unit has confounder values $\{\ell_1,\ell_2\}$ and another unit has confounder value $\{\ell_1',\ell_2'\}$. There are many ways to define the distance between these units.
+
+* Euclidean distance: square root of sum of squared differences on each variable
+$$d\left(\vec\ell,\vec\ell'\right) = \sqrt{(\ell_1 - \ell_1')^2 + (\ell_2 - \ell_2')^2}$$
+* Manhattan distance: sum of absolute difference on each variable
+$$d\left(\vec\ell,\vec\ell'\right) = \lvert\ell_1 - \ell_1'\rvert + \lvert\ell_2 - \ell_2'\rvert$$
+* Propensity score distance: difference in the conditional probability of being treated
+$$d\left(\vec\ell,\vec\ell'\right) = \left\lvert P\left(A = 1\mid L_1 = \ell_1, L_2 = \ell_2\right) - P\left(A = 1\mid L_1 = \ell_1', L_2 = \ell_2'\right)\right\rvert$$
+
+## 3) Matching method
+
+There are many ways to match units given the distance metric.
+
+### Number of matches
+
+* In 1:1 matching, each treated unit is matched to one control unit
+* In 1:k matching, each treated unit is matched to `k` control units
+* In other varieties, the ratio is allowed to differ across units.
+
+### Sequence of matching
+
+* Greedy matching begins with the first treated unit and finds the best control unit, removing it from the eligible pool. This control unit may be a good match for the second treated unit but is no longer available
+* Optimal matching finds the optimal pairs over all the units, but is more compute-intensive
+
+## 4) Aggregate
+
+The final step is to aggregate, with two main options
+
+a) difference the mean $Y$ among matched treated and control units
+b) model $Y$ given treatment and confounders among the matched set
+
+While (a) is simpler, (b) is often preferred because it correct for differences in the confounder values that persist even after matching.
+
+## Code illustration
+
+The `MatchIt` package is one way to implement various matching strategies. You can install with `install.package("MatchIt")` in your R console.
+```{r}
+library(MatchIt)
+```
+
+The code below uses MatchIt to conduct nearest-neighbor 1:1 propensity score matching.
+
+```{r}
+matched <- matchit(
+  A ~ L1 + L2,
+  data = data, 
+  distance = "glm",
+  method = "nearest"
+)
+```
+
+The code below appends the matching weights to the data. Units with `match_weight == 1` are matched, while those with `match_weight == 0` are unmatched.
+```{r}
+# Append matching weights to the data
+with_weights <- data |>
+  mutate(match_weight = matched$weights) |>
+  select(A, L1, L2, Y, match_weight)
+```
+```{r, echo = F}
+with_weights |> print()
+```
+
+The code below estimates the ATT by OLS regression on the matched set.
+
+```{r}
+model <- lm(
+  Y ~ A + L1 + L2,
+  data = with_weights,
+  weights = match_weight
+)
+summary(model)
+```
+
+The coefficient on the treatment `A` is an estiamte of the ATT.
+
+## Closing thoughts
+
+Matching is a powerful strategy because it bridges nonparametric causal identification to a concrete idea: match each treated unit to a similar unit that wasn't treated.
+
+Here are a few things you could try next:
+
+- type `?matchit` to learn about other arguments that could modify the distance metric or matching method
+- evaluate performance over many repeated simulations
+- evaluate performance at different simulated sample sizes
+

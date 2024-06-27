@@ -1,0 +1,142 @@
+[
+  {
+    "objectID": "simulate.html",
+    "href": "simulate.html",
+    "title": "Generate Data",
+    "section": "",
+    "text": "The code below will generate a dataset of \\(n = 100\\) observations. Each observation contains several observed variables:\n\nL1 A numeric confounder\nL2 A numeric confounder\nA A binary treatment\nY A numeric outcome\n\nEach observation also contains outcomes that we know only because the data are simulated. These variables are useful as ground truth in simulations.\n\npropensity_score The true propensity score \\(P(A = 1 \\mid \\vec{L})\\)\nY0 The potential outcome under control\nY1 The potential outcome under treatment\n\nTo run this code, you will need the dplyr package. If you don’t have it, first run the line install.packages(\"dplyr\") in your R console.\n\nlibrary(dplyr)\n\n\nAttaching package: 'dplyr'\n\n\nThe following objects are masked from 'package:stats':\n\n    filter, lag\n\n\nThe following objects are masked from 'package:base':\n\n    intersect, setdiff, setequal, union\n\nn &lt;- 100\ndata &lt;- tibble(L1 = rnorm(n),\n               L2 = rnorm(n)) |&gt;\n  # Generate potential outcomes as functions of L\n  mutate(Y0 = rnorm(n(), mean = L1 + L2, sd = 1),\n         Y1 = rnorm(n(), mean = Y0 + 1, sd = 1)) |&gt;\n  # Generate treatment as a function of L\n  mutate(propensity_score = plogis(-2 + L1 + L2)) |&gt;\n  mutate(A = rbinom(n(), 1, propensity_score)) |&gt;\n  # Generate factual outcome\n  mutate(Y = case_when(A == 0 ~ Y0,\n                       A == 1 ~ Y1))\n\nA simulation is nice because the answer is known. In this simulation, the conditional average causal effect of A on Y equals 1 at any value of L1 and L_2."
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Causal Estimators",
+    "section": "",
+    "text": "This page leads a tutorial on causal estimators. See the first page for code to generate data, and choose any of the subsequent pages to practice applying a causal estimator."
+  },
+  {
+    "objectID": "data.html",
+    "href": "data.html",
+    "title": "Generate Data",
+    "section": "",
+    "text": "The code below will generate a dataset of \\(n = 100\\) observations. Each observation contains several observed variables:\n\nL1 A numeric confounder\nL2 A numeric confounder\nA A binary treatment\nY A numeric outcome\n\nEach observation also contains outcomes that we know only because the data are simulated. These variables are useful as ground truth in simulations.\n\npropensity_score The true propensity score \\(P(A = 1 \\mid \\vec{L})\\)\nY0 The potential outcome under control\nY1 The potential outcome under treatment\n\nTo run this code, you will need the dplyr package. If you don’t have it, first run the line install.packages(\"dplyr\") in your R console.\n\nlibrary(dplyr)\n\n\nAttaching package: 'dplyr'\n\n\nThe following objects are masked from 'package:stats':\n\n    filter, lag\n\n\nThe following objects are masked from 'package:base':\n\n    intersect, setdiff, setequal, union\n\nn &lt;- 100\ndata &lt;- tibble(L1 = rnorm(n),\n               L2 = rnorm(n)) |&gt;\n  # Generate potential outcomes as functions of L\n  mutate(Y0 = rnorm(n(), mean = L1 + L2, sd = 1),\n         Y1 = rnorm(n(), mean = Y0 + 1, sd = 1)) |&gt;\n  # Generate treatment as a function of L\n  mutate(propensity_score = plogis(-2 + L1 + L2)) |&gt;\n  mutate(A = rbinom(n(), 1, propensity_score)) |&gt;\n  # Generate factual outcome\n  mutate(Y = case_when(A == 0 ~ Y0,\n                       A == 1 ~ Y1))\n\nA simulation is nice because the answer is known. In this simulation, the conditional average causal effect of A on Y equals 1 at any value of L1 and L_2."
+  },
+  {
+    "objectID": "outcomemodeling.html",
+    "href": "outcomemodeling.html",
+    "title": "Generate Data",
+    "section": "",
+    "text": "Because the causal effect of A on Y is identified by adjusting for the confounders L1 and L2, we can estimate by outcome modeling.\nThe code below assumes you have generated data as on the data page.\nAttaching package: 'dplyr'\n\n\nThe following objects are masked from 'package:stats':\n\n    filter, lag\n\n\nThe following objects are masked from 'package:base':\n\n    intersect, setdiff, setequal, union"
+  },
+  {
+    "objectID": "outcomemodeling.html#model",
+    "href": "outcomemodeling.html#model",
+    "title": "Generate Data",
+    "section": "1) Model",
+    "text": "1) Model\nThe code below uses Ordinary Least Squares to estimate an outcome model.\n\nmodel &lt;- lm(Y ~ A*(L1 + L2), data = data)\n\n\n\n\nCall:\nlm(formula = Y ~ A * (L1 + L2), data = data)\n\nResiduals:\n    Min      1Q  Median      3Q     Max \n-2.4829 -0.7453 -0.0346  0.6853  3.5148 \n\nCoefficients:\n            Estimate Std. Error t value Pr(&gt;|t|)    \n(Intercept) -0.10774    0.13100  -0.822 0.412899    \nA            1.33580    0.34441   3.878 0.000195 ***\nL1           1.01981    0.12239   8.333 6.38e-13 ***\nL2           0.92638    0.13440   6.893 6.20e-10 ***\nA:L1        -0.05985    0.28690  -0.209 0.835214    \nA:L2         0.02997    0.24986   0.120 0.904778    \n---\nSignif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n\nResidual standard error: 1.103 on 94 degrees of freedom\nMultiple R-squared:  0.7324,    Adjusted R-squared:  0.7181 \nF-statistic: 51.45 on 5 and 94 DF,  p-value: &lt; 2.2e-16\n\n\nWe chose a model where treatment A is interacted with an additive function of confounders L1 + L2. This is also known as a t-learner ((Kunzel et al. 2019)[https://www.pnas.org/doi/abs/10.1073/pnas.1804597116]) because it is equivalent to estimating two separate regression models of outcome on confounders, one among those for whom A == 1 and among those for whom A == 0."
+  },
+  {
+    "objectID": "outcomemodeling.html#predict",
+    "href": "outcomemodeling.html#predict",
+    "title": "Generate Data",
+    "section": "2) Predict",
+    "text": "2) Predict\nThe code below predicts the conditional average potential outcome under treatment and control at the confounder values of each observation.\nFirst, we create data with A set to the value 1.\n\ndata_1 &lt;- data |&gt;\n  mutate(A = 1)\n\n\n\n# A tibble: 100 × 7\n      L1    L2     Y0    Y1 propensity_score     A      Y\n   &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;            &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;\n1  0.658 0.319  0.645  2.52           0.264      1  2.52 \n2 -0.145 0.210  0.433  1.20           0.126      1  0.433\n3 -1.41  0.480 -0.924 -1.47           0.0506     1 -0.924\n# ℹ 97 more rows\n\n\nThen, we create data with A set to the value 1.\n\ndata_0 &lt;- data |&gt;\n  mutate(A = 0)\n\n\n\n# A tibble: 100 × 7\n      L1    L2     Y0    Y1 propensity_score     A      Y\n   &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;            &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;\n1  0.658 0.319  0.645  2.52           0.264      0  2.52 \n2 -0.145 0.210  0.433  1.20           0.126      0  0.433\n3 -1.41  0.480 -0.924 -1.47           0.0506     0 -0.924\n# ℹ 97 more rows\n\n\nWe use our outcome model to predict the conditional mean of the potential outcome under each scenario.\n\npredicted &lt;- data |&gt;\n  mutate(\n    Y1_predicted = predict(model, newdata = data_1),\n    Y0_predicted = predict(model, newdata = data_0),\n    effect_predicted = Y1_predicted - Y0_predicted\n  )\n\n\n\n# A tibble: 100 × 10\n      L1    L2     Y0    Y1 propensity_score     A      Y Y1_predicted\n   &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;            &lt;dbl&gt; &lt;int&gt;  &lt;dbl&gt;        &lt;dbl&gt;\n1  0.658 0.319  0.645  2.52           0.264      1  2.52         2.16 \n2 -0.145 0.210  0.433  1.20           0.126      0  0.433        1.29 \n3 -1.41  0.480 -0.924 -1.47           0.0506     0 -0.924        0.333\n# ℹ 97 more rows\n# ℹ 2 more variables: Y0_predicted &lt;dbl&gt;, effect_predicted &lt;dbl&gt;"
+  },
+  {
+    "objectID": "outcomemodeling.html#aggregate",
+    "href": "outcomemodeling.html#aggregate",
+    "title": "Generate Data",
+    "section": "3) Aggregate",
+    "text": "3) Aggregate\nThe final step is to aggregate to an average causal effect estimate.\n\naggregated &lt;- predicted |&gt;\n  summarize(average_effect_estimate = mean(effect_predicted))\n\n\n\n# A tibble: 1 × 1\n  average_effect_estimate\n                    &lt;dbl&gt;\n1                    1.34"
+  },
+  {
+    "objectID": "outcomemodeling.html#closing-thoughts",
+    "href": "outcomemodeling.html#closing-thoughts",
+    "title": "Generate Data",
+    "section": "Closing thoughts",
+    "text": "Closing thoughts\nOutcome modeling is a powerful strategy because it bridges nonparametric causal identification to longstanding strategies where outcomes are modeled by parametric regression.\nHere are a few things you could try next:\n\nreplace step (1) with another approach to estimate conditional mean outcomes, such as a different functional form or a machine learning method\nevaluate performance over many repeated simulations\nevaluate performance at different simulated sample sizes"
+  },
+  {
+    "objectID": "weighting.html",
+    "href": "weighting.html",
+    "title": "Inverse Probability of Treatment Weighting",
+    "section": "",
+    "text": "Because the causal effect of A on Y is identified by adjusting for the confounders L1 and L2, we can estimate by inverse probability of treatment weighting.\nThe code below assumes you have generated data as on the data page.\nAttaching package: 'dplyr'\n\n\nThe following objects are masked from 'package:stats':\n\n    filter, lag\n\n\nThe following objects are masked from 'package:base':\n\n    intersect, setdiff, setequal, union"
+  },
+  {
+    "objectID": "matching.html",
+    "href": "matching.html",
+    "title": "Matching",
+    "section": "",
+    "text": "Because the causal effect of A on Y is identified by adjusting for the confounders L1 and L2, we can estimate by matching treated and untreated units with similar values of these confounders.\nThere are many methods for matching. The code below walks through the particular case of propensity score matching.\nThe code below assumes you have generated data as on the data page.\nAttaching package: 'dplyr'\n\n\nThe following objects are masked from 'package:stats':\n\n    filter, lag\n\n\nThe following objects are masked from 'package:base':\n\n    intersect, setdiff, setequal, union"
+  },
+  {
+    "objectID": "weighting.html#model",
+    "href": "weighting.html#model",
+    "title": "Inverse Probability of Treatment Weighting",
+    "section": "1) Model",
+    "text": "1) Model\nThe code below uses logistic regression to model the conditional probability of treatment.\n\nmodel &lt;- glm(\n  A ~ L1 + L2, \n  data = data, \n  family = binomial\n)\n\n\n\n\nCall:\nglm(formula = A ~ L1 + L2, family = binomial, data = data)\n\nCoefficients:\n            Estimate Std. Error z value Pr(&gt;|z|)    \n(Intercept)  -2.3040     0.4360  -5.285 1.26e-07 ***\nL1            0.9150     0.3104   2.948 0.003197 ** \nL2            1.3152     0.3921   3.354 0.000796 ***\n---\nSignif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n\n(Dispersion parameter for binomial family taken to be 1)\n\n    Null deviance: 91.177  on 99  degrees of freedom\nResidual deviance: 64.427  on 97  degrees of freedom\nAIC: 70.427\n\nNumber of Fisher Scoring iterations: 6"
+  },
+  {
+    "objectID": "weighting.html#predict",
+    "href": "weighting.html#predict",
+    "title": "Inverse Probability of Treatment Weighting",
+    "section": "2) Predict",
+    "text": "2) Predict\nThe code below predicts the conditional probability of each unit’s observed treatment value, also known as the propensity score.\n\npredicted &lt;- data |&gt;\n  # Predict the probabilities that A = 1 and A = 0\n  mutate(\n    p_A_equals_1 = predict(model, type = \"response\"),\n    p_A_equals_0 = 1 - p_A_equals_1\n  ) |&gt;\n  # Assign the propensity score based on the observed treatment\n  mutate(\n    pi = case_when(\n      A == 1 ~ p_A_equals_1,\n      A == 0 ~ p_A_equals_0\n    )\n  )\n\n\n\n# A tibble: 100 × 10\n      L1     L2     Y0    Y1 propensity_score     A      Y p_A_equals_1\n   &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;            &lt;dbl&gt; &lt;int&gt;  &lt;dbl&gt;        &lt;dbl&gt;\n1 -1.23  -1.53  -3.70  -3.90          0.00850     0 -3.70       0.00431\n2 -0.316  0.320  0.121  1.37          0.120       0  0.121      0.102  \n3 -0.505  0.551  0.430 -1.10          0.124       0  0.430      0.115  \n# ℹ 97 more rows\n# ℹ 2 more variables: p_A_equals_0 &lt;dbl&gt;, pi &lt;dbl&gt;"
+  },
+  {
+    "objectID": "weighting.html#aggregate",
+    "href": "weighting.html#aggregate",
+    "title": "Inverse Probability of Treatment Weighting",
+    "section": "3) Aggregate",
+    "text": "3) Aggregate\nThe final step is to aggregate to an average causal effect estimate.\n\naggregated_Y1 &lt;- predicted |&gt;\n  # Restrict to cases with A == 1\n  filter(A == 1) |&gt;\n  # Calculate the weighted mean outcome\n  summarize(estimate = weighted.mean(Y, w = 1 / pi))\n\naggregated_Y0 &lt;- predicted |&gt;\n  # Restrict to cases with A == 1\n  filter(A == 0) |&gt;\n  # Calculate the weighted mean outcome\n  summarize(estimate = weighted.mean(Y, w = 1 / pi))\n\naverage_effect_estimate &lt;- aggregated_Y1 - aggregated_Y0\n\n\n\n  estimate\n1 0.362903"
+  },
+  {
+    "objectID": "weighting.html#closing-thoughts",
+    "href": "weighting.html#closing-thoughts",
+    "title": "Inverse Probability of Treatment Weighting",
+    "section": "Closing thoughts",
+    "text": "Closing thoughts\nInverse probability of treatment weighting is a powerful strategy because it bridges nonparametric causal identification to longstanding strategies from survey sampling where units from a population are sampled with known probabilities of inclusion. The analogy is that outcomes under treatment are sampled with estimated inclusion probabilities (the probability of treatment). Just as in a population sample we would need to think carefully about the probability of sampling, treatment modeling encourages us to model the probability of receiving the observed treatment.\nHere are a few things you could try next:\n\nreplace step (1) with another approach to estimate conditional treatment probabilities, such as a different functional form or a machine learning method\nevaluate performance over many repeated simulations\nevaluate performance at different simulated sample sizes"
+  },
+  {
+    "objectID": "matching.html#target-population",
+    "href": "matching.html#target-population",
+    "title": "Matching",
+    "section": "1) Target population",
+    "text": "1) Target population\nWhile the target population is relevant to all causal estimands and estimators, it is especially apparent when matching. One might choose\n\naverage treatment effect (ATE): the average over all units\naverage treatment effect on the treated (ATT): the average effect among units who received the treatment\naverage treatment effect on the control (ATC): the average effect among units who did not receive the treatment\n\nWe will focus on the ATT, which means we will take each treated unit and seek to find a matching control unit with similar values of the confounders. If we instead studied the ATC, we would take each control unit and seek to find a matching treated unit with similar values of the confounders. The ATT and ATC will generally be different to the degree that effects and treatment probabilities both vary across values of the confounders."
+  },
+  {
+    "objectID": "matching.html#distance-metric",
+    "href": "matching.html#distance-metric",
+    "title": "Matching",
+    "section": "2) Distance metric",
+    "text": "2) Distance metric\nSuppose one unit has confounder values \\(\\{\\ell_1,\\ell_2\\}\\) and another unit has confounder value \\(\\{\\ell_1',\\ell_2'\\}\\). There are many ways to define the distance between these units.\n\nEuclidean distance: square root of sum of squared differences on each variable \\[d\\left(\\vec\\ell,\\vec\\ell'\\right) = \\sqrt{(\\ell_1 - \\ell_1')^2 + (\\ell_2 - \\ell_2')^2}\\]\nManhattan distance: sum of absolute difference on each variable \\[d\\left(\\vec\\ell,\\vec\\ell'\\right) = \\lvert\\ell_1 - \\ell_1'\\rvert + \\lvert\\ell_2 - \\ell_2'\\rvert\\]\nPropensity score distance: difference in the conditional probability of being treated \\[d\\left(\\vec\\ell,\\vec\\ell'\\right) = \\left\\lvert P\\left(A = 1\\mid L_1 = \\ell_1, L_2 = \\ell_2\\right) - P\\left(A = 1\\mid L_1 = \\ell_1', L_2 = \\ell_2'\\right)\\right\\rvert\\]"
+  },
+  {
+    "objectID": "matching.html#matching-method",
+    "href": "matching.html#matching-method",
+    "title": "Matching",
+    "section": "3) Matching method",
+    "text": "3) Matching method\nThere are many ways to match units given the distance metric.\n\nNumber of matches\n\nIn 1:1 matching, each treated unit is matched to one control unit\nIn 1:k matching, each treated unit is matched to k control units\nIn other varieties, the ratio is allowed to differ across units.\n\n\n\nSequence of matching\n\nGreedy matching begins with the first treated unit and finds the best control unit, removing it from the eligible pool. This control unit may be a good match for the second treated unit but is no longer available\nOptimal matching finds the optimal pairs over all the units, but is more compute-intensive"
+  },
+  {
+    "objectID": "matching.html#aggregate",
+    "href": "matching.html#aggregate",
+    "title": "Matching",
+    "section": "4) Aggregate",
+    "text": "4) Aggregate\nThe final step is to aggregate, with two main options\n\ndifference the mean \\(Y\\) among matched treated and control units\nmodel \\(Y\\) given treatment and confounders among the matched set\n\nWhile (a) is simpler, (b) is often preferred because it correct for differences in the confounder values that persist even after matching."
+  },
+  {
+    "objectID": "matching.html#code-illustration",
+    "href": "matching.html#code-illustration",
+    "title": "Matching",
+    "section": "Code illustration",
+    "text": "Code illustration\nThe MatchIt package is one way to implement various matching strategies. You can install with install.package(\"MatchIt\") in your R console.\n\nlibrary(MatchIt)\n\nThe code below uses MatchIt to conduct nearest-neighbor 1:1 propensity score matching.\n\nmatched &lt;- matchit(\n  A ~ L1 + L2,\n  data = data, \n  distance = \"glm\",\n  method = \"nearest\"\n)\n\nThe code below appends the matching weights to the data. Units with match_weight == 1 are matched, while those with match_weight == 0 are unmatched.\n\n# Append matching weights to the data\nwith_weights &lt;- data |&gt;\n  mutate(match_weight = matched$weights) |&gt;\n  select(A, L1, L2, Y, match_weight)\n\n\n\n# A tibble: 100 × 5\n       A      L1       L2      Y match_weight\n   &lt;int&gt;   &lt;dbl&gt;    &lt;dbl&gt;  &lt;dbl&gt;        &lt;dbl&gt;\n 1     0  0.621   0.182    0.168            0\n 2     0 -1.27   -0.930   -3.31             0\n 3     1  3.13    0.506    3.11             1\n 4     0  0.0818  2.70     0.707            1\n 5     0 -0.596   1.33     1.84             0\n 6     0 -2.51    1.43     0.378            0\n 7     0 -0.452   2.29     0.884            0\n 8     0  1.17   -0.00888  3.30             0\n 9     0  0.155   1.35    -1.31             0\n10     0  1.13   -0.511    0.310            0\n# ℹ 90 more rows\n\n\nThe code below estimates the ATT by OLS regression on the matched set.\n\nmodel &lt;- lm(\n  Y ~ A + L1 + L2,\n  data = with_weights,\n  weights = match_weight\n)\nsummary(model)\n\n\nCall:\nlm(formula = Y ~ A + L1 + L2, data = with_weights, weights = match_weight)\n\nWeighted Residuals:\n   Min     1Q Median     3Q    Max \n-2.755  0.000  0.000  0.000  2.033 \n\nCoefficients:\n            Estimate Std. Error t value Pr(&gt;|t|)   \n(Intercept)   0.3283     0.4589   0.715  0.47987   \nA             1.2807     0.4599   2.785  0.00919 **\nL1            0.8728     0.3027   2.883  0.00721 **\nL2            0.8105     0.2366   3.425  0.00180 **\n---\nSignif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n\nResidual standard error: 1.307 on 30 degrees of freedom\nMultiple R-squared:  0.4954,    Adjusted R-squared:  0.445 \nF-statistic: 9.819 on 3 and 30 DF,  p-value: 0.0001136\n\n\nThe coefficient on the treatment A is an estiamte of the ATT."
+  },
+  {
+    "objectID": "matching.html#closing-thoughts",
+    "href": "matching.html#closing-thoughts",
+    "title": "Matching",
+    "section": "Closing thoughts",
+    "text": "Closing thoughts\nMatching is a powerful strategy because it bridges nonparametric causal identification to a concrete idea: match each treated unit to a similar unit that wasn’t treated.\nHere are a few things you could try next:\n\ntype ?matchit to learn about other arguments that could modify the distance metric or matching method\nevaluate performance over many repeated simulations\nevaluate performance at different simulated sample sizes"
+  }
+]

@@ -1,0 +1,103 @@
+---
+title: "Outcome Modeling"
+---
+
+Because the causal effect of `A` on `Y` is identified by adjusting for the confounders `L1` and `L2`, we can estimate by outcome modeling.
+
+1) Model $E(Y\mid A, L_1, L_2)$, the conditional mean of $Y$ given the treatment and confounders
+2) Predict potential outcomes
+     * set `A = 1` for every unit. Predict $Y^1$
+     * set `A = 0` for every unit. Predict $Y^0$
+3) Aggregate to the average causal effect
+
+The code below assumes you have generated data as on the [data](data) page.
+
+```{r, echo = F}
+library(dplyr)
+n <- 100
+data <- tibble(L1 = rnorm(n),
+               L2 = rnorm(n)) |>
+  # Generate potential outcomes as functions of L
+  mutate(Y0 = rnorm(n(), mean = L1 + L2, sd = 1),
+         Y1 = rnorm(n(), mean = Y0 + 1, sd = 1)) |>
+  # Generate treatment as a function of L
+  mutate(propensity_score = plogis(-2 + L1 + L2)) |>
+  mutate(A = rbinom(n(), 1, propensity_score)) |>
+  # Generate factual outcome
+  mutate(Y = case_when(A == 0 ~ Y0,
+                       A == 1 ~ Y1))
+```
+
+## 1) Model
+
+The code below uses Ordinary Least Squares to estimate an outcome model.
+
+```{r}
+model <- lm(Y ~ A*(L1 + L2), data = data)
+```
+```{r, echo = F}
+summary(model)
+```
+
+We chose a model where treatment `A` is interacted with an additive function of confounders `L1 + L2`. This is also known as a t-learner ((Kunzel et al. 2019)[https://www.pnas.org/doi/abs/10.1073/pnas.1804597116]) because it is equivalent to estimating **t**wo separate regression models of outcome on confounders, one among those for whom `A == 1` and among those for whom `A == 0`.
+
+## 2) Predict
+
+The code below predicts the conditional average potential outcome under treatment and control at the confounder values of each observation.
+
+First, we create data with `A` set to the value `1`.
+
+```{r}
+data_1 <- data |>
+  mutate(A = 1)
+```
+```{r, echo = F}
+data_1 |> print(n = 3)
+```
+
+Then, we create data with `A` set to the value `0`.
+
+```{r}
+data_0 <- data |>
+  mutate(A = 0)
+```
+```{r, echo = F}
+data_0 |> print(n = 3)
+```
+
+We use our outcome model to predict the conditional mean of the potential outcome under each scenario.
+
+```{r}
+predicted <- data |>
+  mutate(
+    Y1_predicted = predict(model, newdata = data_1),
+    Y0_predicted = predict(model, newdata = data_0),
+    effect_predicted = Y1_predicted - Y0_predicted
+  )
+```
+```{r, echo = F}
+predicted |> print(n = 3)
+```
+
+## 3) Aggregate
+
+The final step is to aggregate to an average causal effect estimate.
+
+```{r}
+aggregated <- predicted |>
+  summarize(average_effect_estimate = mean(effect_predicted))
+```
+```{r, echo = F}
+aggregated |> print()
+```
+
+## Closing thoughts
+
+Outcome modeling is a powerful strategy because it bridges nonparametric causal identification to longstanding strategies where outcomes are modeled by parametric regression.
+
+Here are a few things you could try next:
+
+- replace step (1) with another approach to estimate conditional mean outcomes, such as a different functional form or a machine learning method
+- evaluate performance over many repeated simulations
+- evaluate performance at different simulated sample sizes
+

@@ -1,0 +1,37 @@
+---
+title: "Generate Data"
+---
+
+The code below will generate a dataset of $n = 100$ observations. Each observation contains several observed variables:
+
+* `L1` A numeric confounder
+* `L2` A numeric confounder
+* `A` A binary treatment
+* `Y` A numeric outcome
+
+Each observation also contains outcomes that we know only because the data are simulated. These variables are useful as ground truth in simulations.
+
+* `propensity_score` The true propensity score $P(A = 1 \mid \vec{L})$
+* `Y0` The potential outcome under control
+* `Y1` The potential outcome under treatment
+
+To run this code, you will need the `dplyr` package. If you don't have it, first run the line `install.packages("dplyr")` in your R console.
+
+```{r}
+library(dplyr)
+n <- 100
+data <- tibble(L1 = rnorm(n),
+               L2 = rnorm(n)) |>
+  # Generate potential outcomes as functions of L
+  mutate(Y0 = rnorm(n(), mean = L1 + L2, sd = 1),
+         Y1 = rnorm(n(), mean = Y0 + 1, sd = 1)) |>
+  # Generate treatment as a function of L
+  mutate(propensity_score = plogis(-2 + L1 + L2)) |>
+  mutate(A = rbinom(n(), 1, propensity_score)) |>
+  # Generate factual outcome
+  mutate(Y = case_when(A == 0 ~ Y0,
+                       A == 1 ~ Y1))
+```
+
+A simulation is nice because the answer is known. In this simulation, the conditional average causal effect of `A` on `Y` equals 1 at any value of `L1` and `L_2`.
+

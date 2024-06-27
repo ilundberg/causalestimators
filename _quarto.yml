@@ -1,0 +1,27 @@
+project:
+  type: website
+  output-dir: docs
+
+website:
+  title: "causalestimators"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: data.qmd
+        text: Simulate Data
+      - href: outcomemodeling.qmd
+        text: Outcome Modeling
+      - href: weighting.qmd
+        text: Weighting
+      - href: matching.qmd
+        text: Matching
+
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: true
+
+
+
