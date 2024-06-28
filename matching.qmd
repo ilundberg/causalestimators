@@ -11,11 +11,12 @@ Because the causal effect of `A` on `Y` is identified by adjusting for the confo
 
 There are many methods for matching. The code below walks through the particular case of propensity score matching.
 
-The code below assumes you have generated data as on the [data](data) page.
+The code below assumes you have generated data as on the [data](data.qmd) page.
 
-```{r, echo = F}
+```{r, echo = F, output = F, message = F, warning = F}
 library(dplyr)
-n <- 100
+set.seed(90095)
+n <- 500
 data <- tibble(L1 = rnorm(n),
                L2 = rnorm(n)) |>
   # Generate potential outcomes as functions of L

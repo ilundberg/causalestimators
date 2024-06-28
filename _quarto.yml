@@ -8,6 +8,8 @@ website:
     left:
       - href: index.qmd
         text: Home
+      - href: intuition.qmd
+        text: Build Intuition
       - href: data.qmd
         text: Simulate Data
       - href: outcomemodeling.qmd

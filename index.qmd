@@ -2,4 +2,6 @@
 title: "Causal Estimators"
 ---
 
-This page leads a tutorial on causal estimators. See the first page for code to generate data, and choose any of the subsequent pages to practice applying a causal estimator.
+This page offers a tutorial on causal estimators. We first designed this page for the Summer Institute in Computational Social Science at UCLA in June 2024.
+
+See the first page for intuition about causal estimators. The next page provides code to simulate data. You can choose any of the subsequent pages in any order to practice applying causal estimators.

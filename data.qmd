@@ -1,5 +1,5 @@
 ---
-title: "Generate Data"
+title: "Simulate Data"
 ---
 
 The code below will generate a dataset of $n = 100$ observations. Each observation contains several observed variables:
@@ -15,13 +15,24 @@ Each observation also contains outcomes that we know only because the data are s
 * `Y0` The potential outcome under control
 * `Y1` The potential outcome under treatment
 
-To run this code, you will need the `dplyr` package. If you don't have it, first run the line `install.packages("dplyr")` in your R console.
+To run this code, you will need the `dplyr` package. If you don't have it, first run the line `install.packages("dplyr")` in your R console. Then, add this line to your R script to load the package.
+
+```{r, message = F, warning = F}
+library(dplyr)
+```
+
+If you want your simulation to match our numbers exactly, add a line to set your seed.
 
 ```{r}
-library(dplyr)
-n <- 100
-data <- tibble(L1 = rnorm(n),
-               L2 = rnorm(n)) |>
+set.seed(90095)
+```
+
+```{r}
+n <- 500
+data <- tibble(
+  L1 = rnorm(n),
+  L2 = rnorm(n)
+) |>
   # Generate potential outcomes as functions of L
   mutate(Y0 = rnorm(n(), mean = L1 + L2, sd = 1),
          Y1 = rnorm(n(), mean = Y0 + 1, sd = 1)) |>

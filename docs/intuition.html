@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>causalestimators - Simulate Data</title>
+<title>causalestimators - Building Intuition</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -19,40 +19,6 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
-}
-/* CSS for syntax highlighting */
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -122,11 +88,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
  <span class="menu-text">Home</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./intuition.html" rel="" target="">
+    <a class="nav-link active" href="./intuition.html" rel="" target="" aria-current="page">
  <span class="menu-text">Build Intuition</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link active" href="./data.html" rel="" target="" aria-current="page">
+    <a class="nav-link" href="./data.html" rel="" target="">
  <span class="menu-text">Simulate Data</span></a>
   </li>  
   <li class="nav-item">
@@ -153,14 +119,23 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- sidebar -->
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#outcome-modeling" id="toc-outcome-modeling" class="nav-link active" data-scroll-target="#outcome-modeling">Outcome modeling</a></li>
+  <li><a href="#inverse-probability-weighting" id="toc-inverse-probability-weighting" class="nav-link" data-scroll-target="#inverse-probability-weighting">Inverse probability weighting</a></li>
+  <li><a href="#matching" id="toc-matching" class="nav-link" data-scroll-target="#matching">Matching</a></li>
+  <li><a href="#what-to-do-next" id="toc-what-to-do-next" class="nav-link" data-scroll-target="#what-to-do-next">What to do next</a></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Simulate Data</h1>
+<h1 class="title">Building Intuition</h1>
 </div>
 
 
@@ -175,46 +150,33 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </header>
 
-<p>The code below will generate a dataset of <span class="math inline">\(n = 100\)</span> observations. Each observation contains several observed variables:</p>
-<ul>
-<li><code>L1</code> A numeric confounder</li>
-<li><code>L2</code> A numeric confounder</li>
-<li><code>A</code> A binary treatment</li>
-<li><code>Y</code> A numeric outcome</li>
-</ul>
-<p>Each observation also contains outcomes that we know only because the data are simulated. These variables are useful as ground truth in simulations.</p>
-<ul>
-<li><code>propensity_score</code> The true propensity score <span class="math inline">\(P(A = 1 \mid \vec{L})\)</span></li>
-<li><code>Y0</code> The potential outcome under control</li>
-<li><code>Y1</code> The potential outcome under treatment</li>
-</ul>
-<p>To run this code, you will need the <code>dplyr</code> package. If you don’t have it, first run the line <code>install.packages("dplyr")</code> in your R console. Then, add this line to your R script to load the package.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p>If you want your simulation to match our numbers exactly, add a line to set your seed.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">90095</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">500</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">L1 =</span> <span class="fu">rnorm</span>(n),</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">L2 =</span> <span class="fu">rnorm</span>(n)</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Generate potential outcomes as functions of L</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Y0 =</span> <span class="fu">rnorm</span>(<span class="fu">n</span>(), <span class="at">mean =</span> L1 <span class="sc">+</span> L2, <span class="at">sd =</span> <span class="dv">1</span>),</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>         <span class="at">Y1 =</span> <span class="fu">rnorm</span>(<span class="fu">n</span>(), <span class="at">mean =</span> Y0 <span class="sc">+</span> <span class="dv">1</span>, <span class="at">sd =</span> <span class="dv">1</span>)) <span class="sc">|&gt;</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Generate treatment as a function of L</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">propensity_score =</span> <span class="fu">plogis</span>(<span class="sc">-</span><span class="dv">2</span> <span class="sc">+</span> L1 <span class="sc">+</span> L2)) <span class="sc">|&gt;</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">A =</span> <span class="fu">rbinom</span>(<span class="fu">n</span>(), <span class="dv">1</span>, propensity_score)) <span class="sc">|&gt;</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Generate factual outcome</span></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Y =</span> <span class="fu">case_when</span>(A <span class="sc">==</span> <span class="dv">0</span> <span class="sc">~</span> Y0,</span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>                       A <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> Y1))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p>A simulation is nice because the answer is known. In this simulation, the conditional average causal effect of <code>A</code> on <code>Y</code> equals 1 at any value of <code>L1</code> and <code>L_2</code>.</p>
+<p>Before diving into a more complex simulated setting, this page builds intuition for causal estimators in a simple setting with only 6 observations. At confounder value 1, 2 out of 3 are treated. At confounder value 2, 1 out of 3 is treated.</p>
+<p><img src="assets/simplesetting.png" class="img-fluid" style="width:30.0%"></p>
+<p>We assume causal identification given the confounder. The causal problem is to use the observed data to learn about the missing values.</p>
+<section id="outcome-modeling" class="level2">
+<h2 class="anchored" data-anchor-id="outcome-modeling">Outcome modeling</h2>
+<p>One strategy is to estimate an outcome model for the conditional mean of the observed outcomes.</p>
+<p><span class="math display">\[E(Y\mid A, X) = \alpha + \beta X + \gamma A\]</span></p>
+<p>In these data, we would estimate <span class="math inline">\(\hat\alpha = 0\)</span>, <span class="math inline">\(\hat\beta = 1\)</span>, and <span class="math inline">\(\hat\gamma = 1\)</span>. We could then predict the counterfactual outcomes.</p>
+<p><img src="assets/simpleoutcomemodeling.png" class="img-fluid" style="width:30.0%"></p>
+</section>
+<section id="inverse-probability-weighting" class="level2">
+<h2 class="anchored" data-anchor-id="inverse-probability-weighting">Inverse probability weighting</h2>
+<p>Another strategy is to consider the treated units as a sample of all units, drawn with unequal probabilities across confounder values. Likewise, for the control units. Just as in sampling we would weight by the inverse probability of sample inclusion, we can weight by the inverse probability of the observed treatment.</p>
+<p><img src="assets/simpleweighting.png" class="img-fluid" style="width:50.0%"></p>
+</section>
+<section id="matching" class="level2">
+<h2 class="anchored" data-anchor-id="matching">Matching</h2>
+<p>A third is to find for each unit a matched case that had the other treatment condition. We then impute the missing outcome value by the observed outcome of the matched case.</p>
+<p><img src="assets/simplematching.png" class="img-fluid" style="width:30.0%"></p>
+<p>Matching can be conceptualized as a special case of outcome modeling, where the outcome model is a nearest neighbor estimator.</p>
+</section>
+<section id="what-to-do-next" class="level2">
+<h2 class="anchored" data-anchor-id="what-to-do-next">What to do next</h2>
+<p>Now that you have a conceptual idea of these strategies, move on to the next pages to practice them with simulated data.</p>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">

@@ -122,6 +122,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
  <span class="menu-text">Home</span></a>
   </li>  
   <li class="nav-item">
+    <a class="nav-link" href="./intuition.html" rel="" target="">
+ <span class="menu-text">Build Intuition</span></a>
+  </li>  
+  <li class="nav-item">
     <a class="nav-link" href="./data.html" rel="" target="">
  <span class="menu-text">Simulate Data</span></a>
   </li>  
@@ -195,32 +199,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>estimate the average causal effect by the difference</li>
 </ul></li>
 </ol>
-<p>The code below assumes you have generated data as on the <a href="data">data</a> page.</p>
-<div class="cell">
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Attaching package: 'dplyr'</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>The following objects are masked from 'package:stats':
-
-    filter, lag</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>The following objects are masked from 'package:base':
-
-    intersect, setdiff, setequal, union</code></pre>
-</div>
-</div>
+<p>The code below assumes you have generated data as on the <a href="./data.html">data</a> page.</p>
 <section id="model" class="level2">
 <h2 class="anchored" data-anchor-id="model">1) Model</h2>
 <p>The code below uses logistic regression to model the conditional probability of treatment.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">glm</span>(</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  A <span class="sc">~</span> L1 <span class="sc">+</span> L2, </span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> data, </span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">family =</span> binomial</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span> <span class="fu">glm</span>(</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  A <span class="sc">~</span> L1 <span class="sc">+</span> L2, </span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> data, </span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">family =</span> binomial</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
 <div class="cell-output cell-output-stdout">
@@ -230,19 +218,19 @@ glm(formula = A ~ L1 + L2, family = binomial, data = data)
 
 Coefficients:
             Estimate Std. Error z value Pr(&gt;|z|)    
-(Intercept)  -2.3040     0.4360  -5.285 1.26e-07 ***
-L1            0.9150     0.3104   2.948 0.003197 ** 
-L2            1.3152     0.3921   3.354 0.000796 ***
+(Intercept)  -2.0740     0.1737 -11.938  &lt; 2e-16 ***
+L1            1.0845     0.1639   6.618 3.65e-11 ***
+L2            1.1877     0.1548   7.673 1.68e-14 ***
 ---
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 (Dispersion parameter for binomial family taken to be 1)
 
-    Null deviance: 91.177  on 99  degrees of freedom
-Residual deviance: 64.427  on 97  degrees of freedom
-AIC: 70.427
+    Null deviance: 474.41  on 499  degrees of freedom
+Residual deviance: 354.86  on 497  degrees of freedom
+AIC: 360.86
 
-Number of Fisher Scoring iterations: 6</code></pre>
+Number of Fisher Scoring iterations: 5</code></pre>
 </div>
 </div>
 </section>
@@ -250,29 +238,29 @@ Number of Fisher Scoring iterations: 6</code></pre>
 <h2 class="anchored" data-anchor-id="predict">2) Predict</h2>
 <p>The code below predicts the conditional probability of each unit’s observed treatment value, also known as the propensity score.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>predicted <span class="ot">&lt;-</span> data <span class="sc">|&gt;</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Predict the probabilities that A = 1 and A = 0</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">p_A_equals_1 =</span> <span class="fu">predict</span>(model, <span class="at">type =</span> <span class="st">"response"</span>),</span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">p_A_equals_0 =</span> <span class="dv">1</span> <span class="sc">-</span> p_A_equals_1</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Assign the propensity score based on the observed treatment</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">pi =</span> <span class="fu">case_when</span>(</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>      A <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> p_A_equals_1,</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>      A <span class="sc">==</span> <span class="dv">0</span> <span class="sc">~</span> p_A_equals_0</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>predicted <span class="ot">&lt;-</span> data <span class="sc">|&gt;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Predict the probabilities that A = 1 and A = 0</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">p_A_equals_1 =</span> <span class="fu">predict</span>(model, <span class="at">type =</span> <span class="st">"response"</span>),</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">p_A_equals_0 =</span> <span class="dv">1</span> <span class="sc">-</span> p_A_equals_1</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Assign the propensity score based on the observed treatment</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">pi =</span> <span class="fu">case_when</span>(</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>      A <span class="sc">==</span> <span class="dv">1</span> <span class="sc">~</span> p_A_equals_1,</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>      A <span class="sc">==</span> <span class="dv">0</span> <span class="sc">~</span> p_A_equals_0</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 100 × 10
-      L1     L2     Y0    Y1 propensity_score     A      Y p_A_equals_1
-   &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;            &lt;dbl&gt; &lt;int&gt;  &lt;dbl&gt;        &lt;dbl&gt;
-1 -1.23  -1.53  -3.70  -3.90          0.00850     0 -3.70       0.00431
-2 -0.316  0.320  0.121  1.37          0.120       0  0.121      0.102  
-3 -0.505  0.551  0.430 -1.10          0.124       0  0.430      0.115  
-# ℹ 97 more rows
+<pre><code># A tibble: 500 × 10
+        L1     L2      Y0    Y1 propensity_score     A       Y p_A_equals_1
+     &lt;dbl&gt;  &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;            &lt;dbl&gt; &lt;int&gt;   &lt;dbl&gt;        &lt;dbl&gt;
+1  0.00304  1.03   0.677   1.59          0.276       0  0.677       0.300  
+2 -2.35    -1.66  -4.09   -3.53          0.00244     0 -4.09        0.00136
+3  0.104   -0.912  0.0659  1.31          0.0569      0  0.0659      0.0455 
+# ℹ 497 more rows
 # ℹ 2 more variables: p_A_equals_0 &lt;dbl&gt;, pi &lt;dbl&gt;</code></pre>
 </div>
 </div>
@@ -281,24 +269,24 @@ Number of Fisher Scoring iterations: 6</code></pre>
 <h2 class="anchored" data-anchor-id="aggregate">3) Aggregate</h2>
 <p>The final step is to aggregate to an average causal effect estimate.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>aggregated_Y1 <span class="ot">&lt;-</span> predicted <span class="sc">|&gt;</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Restrict to cases with A == 1</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(A <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">|&gt;</span></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Calculate the weighted mean outcome</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">estimate =</span> <span class="fu">weighted.mean</span>(Y, <span class="at">w =</span> <span class="dv">1</span> <span class="sc">/</span> pi))</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>aggregated_Y0 <span class="ot">&lt;-</span> predicted <span class="sc">|&gt;</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Restrict to cases with A == 1</span></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(A <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">|&gt;</span></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Calculate the weighted mean outcome</span></span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">estimate =</span> <span class="fu">weighted.mean</span>(Y, <span class="at">w =</span> <span class="dv">1</span> <span class="sc">/</span> pi))</span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>average_effect_estimate <span class="ot">&lt;-</span> aggregated_Y1 <span class="sc">-</span> aggregated_Y0</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>aggregated_Y1 <span class="ot">&lt;-</span> predicted <span class="sc">|&gt;</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Restrict to cases with A == 1</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(A <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">|&gt;</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Calculate the weighted mean outcome</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">estimate =</span> <span class="fu">weighted.mean</span>(Y, <span class="at">w =</span> <span class="dv">1</span> <span class="sc">/</span> pi))</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>aggregated_Y0 <span class="ot">&lt;-</span> predicted <span class="sc">|&gt;</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Restrict to cases with A == 1</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(A <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">|&gt;</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Calculate the weighted mean outcome</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">estimate =</span> <span class="fu">weighted.mean</span>(Y, <span class="at">w =</span> <span class="dv">1</span> <span class="sc">/</span> pi))</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>average_effect_estimate <span class="ot">&lt;-</span> aggregated_Y1 <span class="sc">-</span> aggregated_Y0</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
 <div class="cell-output cell-output-stdout">
 <pre><code>  estimate
-1 0.362903</code></pre>
+1 1.288555</code></pre>
 </div>
 </div>
 </section>
